@@ -1,0 +1,13 @@
+{
+  "name": "scm-portal-server",
+  "version": "1.0.0",
+  "description": "Supply Chain Management Portal API",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": ["scm", "supply-chain", "api"],
+  "author": "Your Name",
+  "license": "MIT"
+}

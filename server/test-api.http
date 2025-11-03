@@ -1,0 +1,103 @@
+### Health Check
+GET http://localhost:5000/api/health
+
+### Get All Products
+GET http://localhost:5000/api/products
+
+### Get Product by ID
+GET http://localhost:5000/api/products/1
+
+### Get Low Stock Products
+GET http://localhost:5000/api/products/low-stock
+
+### Create New Product
+POST http://localhost:5000/api/products
+Content-Type: application/json
+
+{
+  "name": "Test Product",
+  "description": "Test Description",
+  "category": "Electronics",
+  "unit_price": 50000.00,
+  "manufacturer": "Test Manufacturer",
+  "availability": true,
+  "supplier_id": 1
+}
+
+### Get All Orders
+GET http://localhost:5000/api/orders
+
+### Get Order by ID
+GET http://localhost:5000/api/orders/1
+
+### Create New Order
+POST http://localhost:5000/api/orders
+Content-Type: application/json
+
+{
+  "customer_id": 1,
+  "priority": "High",
+  "items": [
+    {
+      "product_id": 1,
+      "quantity": 1
+    },
+    {
+      "product_id": 4,
+      "quantity": 2
+    }
+  ]
+}
+
+### Get All Customers
+GET http://localhost:5000/api/customers
+
+### Get VIP Customers
+GET http://localhost:5000/api/customers/vip
+
+### Create Customer
+POST http://localhost:5000/api/customers
+Content-Type: application/json
+
+{
+  "name": "New Customer",
+  "address": "123 Test Street",
+  "email": "newcustomer@test.com",
+  "phone_number": "+91-9999999999",
+  "company_id": 3
+}
+
+### Get All Inventory
+GET http://localhost:5000/api/inventory
+
+### Get Low Stock Inventory
+GET http://localhost:5000/api/inventory/low-stock
+
+### Get Warehouse Summary
+GET http://localhost:5000/api/inventory/warehouse-summary
+
+### Update Inventory
+PUT http://localhost:5000/api/inventory
+Content-Type: application/json
+
+{
+  "product_id": 1,
+  "warehouse_id": 1,
+  "operation": "ADD",
+  "quantity": 10
+}
+
+### Get Complete Dashboard
+GET http://localhost:5000/api/dashboard
+
+### Get Dashboard Stats
+GET http://localhost:5000/api/dashboard/stats
+
+### Get Recent Orders
+GET http://localhost:5000/api/dashboard/recent-orders?limit=10
+
+### Get Top Products
+GET http://localhost:5000/api/dashboard/top-products?limit=10
+
+### Get Daily Revenue
+GET http://localhost:5000/api/dashboard/daily-revenue?days=30
