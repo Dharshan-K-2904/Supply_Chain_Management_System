@@ -4,17 +4,37 @@
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
+    <meta name="theme-color" content="#3b82f6" />
     <meta
       name="description"
-      content="Web site created using create-react-app"
+      content="Supply Chain Management Portal - Manage products, orders, customers, and inventory efficiently"
     />
+    <meta name="author" content="Your Name" />
+    <meta name="keywords" content="supply chain, inventory management, order processing, logistics" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://scm-portal.com/" />
+    <meta property="og:title" content="SCM Portal - Supply Chain Management" />
+    <meta property="og:description" content="Complete supply chain management solution for modern businesses" />
+    <meta property="og:image" content="%PUBLIC_URL%/og-image.png" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://scm-portal.com/" />
+    <meta property="twitter:title" content="SCM Portal - Supply Chain Management" />
+    <meta property="twitter:description" content="Complete supply chain management solution for modern businesses" />
+    <meta property="twitter:image" content="%PUBLIC_URL%/og-image.png" />
+
+    <!-- Apple Touch Icon -->
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    
     <!--
       manifest.json provides metadata used when your web app is installed on a
       user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
     -->
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    
     <!--
       Notice the use of %PUBLIC_URL% in the tags above.
       It will be replaced with the URL of the `public` folder during the build.
@@ -24,11 +44,153 @@
       work correctly both with client-side routing and a non-root public URL.
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
-    <title>React App</title>
+    
+    <!-- Google Fonts (Optional - for better typography) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+
+    <title>SCM Portal - Supply Chain Management System</title>
+
+    <!-- Inline Critical CSS for faster initial render -->
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+          'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        background-color: #f9fafb;
+        color: #111827;
+      }
+
+      #root {
+        min-height: 100vh;
+      }
+
+      /* Loading Screen */
+      .loading-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #ffffff;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+      }
+
+      .loading-spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid #e5e7eb;
+        border-top-color: #3b82f6;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .loading-text {
+        margin-top: 20px;
+        font-size: 16px;
+        color: #6b7280;
+        font-weight: 500;
+      }
+
+      /* Hide loading screen when React loads */
+      #root:not(:empty) + .loading-screen {
+        display: none;
+      }
+
+      /* Prevent flash of unstyled content */
+      .fade-in {
+        animation: fadeIn 0.5s ease-in;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      /* No JavaScript fallback */
+      noscript {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #fee;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+      }
+
+      noscript div {
+        background: white;
+        padding: 40px;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        max-width: 500px;
+      }
+
+      noscript h1 {
+        color: #dc2626;
+        margin-bottom: 16px;
+        font-size: 24px;
+      }
+
+      noscript p {
+        color: #4b5563;
+        line-height: 1.6;
+      }
+    </style>
   </head>
   <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <noscript>
+      <div>
+        <h1>⚠️ JavaScript Required</h1>
+        <p>
+          You need to enable JavaScript to run this application.<br />
+          SCM Portal is a modern web application that requires JavaScript to function properly.
+        </p>
+        <p style="margin-top: 20px; font-size: 14px; color: #6b7280;">
+          Please enable JavaScript in your browser settings and reload the page.
+        </p>
+      </div>
+    </noscript>
+    
+    <!-- React Root -->
     <div id="root"></div>
+    
+    <!-- Loading Screen (shown while React is loading) -->
+    <div class="loading-screen">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">Loading SCM Portal...</div>
+    </div>
+
     <!--
       This HTML file is a template.
       If you open it directly in the browser, you will see an empty page.
@@ -39,5 +201,22 @@
       To begin the development, run `npm start` or `yarn start`.
       To create a production bundle, use `npm run build` or `yarn build`.
     -->
+
+    <!-- Service Worker Registration (Optional - for PWA features) -->
+    <script>
+      // Register service worker for offline support (optional)
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker
+            .register('/service-worker.js')
+            .then((registration) => {
+              console.log('SW registered: ', registration);
+            })
+            .catch((registrationError) => {
+              console.log('SW registration failed: ', registrationError);
+            });
+        });
+      }
+    </script>
   </body>
 </html>

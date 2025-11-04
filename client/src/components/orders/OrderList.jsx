@@ -1,9 +1,8 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import Table from '../common/Table';
 import Badge from '../common/Badge';
 import Button from '../common/Button';
-import { Eye, Package } from 'lucide-react';
+import { Eye } from 'lucide-react';
 
 const OrderList = ({ orders, onViewDetails }) => {
   const getStatusVariant = (status) => {

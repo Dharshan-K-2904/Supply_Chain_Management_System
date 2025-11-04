@@ -1,8 +1,10 @@
 # SCM Portal API Documentation
 
 ## Base URL
-```
-http://localhost:5000/api
+
+```link
+<http://localhost:5000/api>
+
 ```
 
 ## Endpoints
