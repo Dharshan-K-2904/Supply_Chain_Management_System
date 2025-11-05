@@ -21,9 +21,11 @@ const Dashboard = () => {
     try {
       setLoading(true);
       const response = await dashboardService.getCompleteDashboard();
-      
+
       if (response.success) {
         setDashboardData(response.data);
+      } else {
+        throw new Error('Invalid response format');
       }
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
