@@ -1,9 +1,7 @@
 // server/controllers/supplierController.js
-// Handles CRUD operations and complex reporting for the Supplier entity.
+// Final controller logic for the Supplier entity.
 
-const Supplier = require('../models/Supplier'); // NOTE: You must create this model next.
-
-// --- Standard CRUD Operations ---
+const Supplier = require('../models/Supplier'); 
 
 // GET /api/suppliers
 exports.getAllSuppliers = async (req, res) => {
@@ -81,7 +79,6 @@ exports.deleteSupplier = async (req, res) => {
  */
 exports.getProductsBySupplier = async (req, res) => {
     try {
-        // NOTE: The model method should select from the vw_SupplierProductList view.
         const products = await Supplier.getProductsBySupplier(req.params.id);
         res.json({ success: true, count: products.length, data: products });
     } catch (error) {
@@ -96,7 +93,6 @@ exports.getProductsBySupplier = async (req, res) => {
  */
 exports.getSupplierPerformance = async (req, res) => {
     try {
-        // NOTE: The model method must call the UDF.
         const score = await Supplier.getPerformanceScore(req.params.id);
         res.json({ 
             success: true, 

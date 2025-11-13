@@ -1,6 +1,6 @@
 -- ============================================
 -- 7. 04_create_views.sql (FINAL ERROR-FREE VERSION)
--- FIXES: Removed non-existent columns (severity, changed_at) from ORDER BY clauses.
+-- FIXES: Corrected all missing column references in ORDER BY clauses.
 -- ============================================
 USE scm_portal;
 
@@ -18,13 +18,13 @@ JOIN order_line OL ON O.order_id = OL.order_id
 JOIN product P ON OL.product_id = P.product_id;
 
 
--- 2. vw_InventoryStatusAlerts (Low Stock/Reorder Query)
+-- 2. vw_InventoryStatusAlerts (CRITICAL FIX: Removed crashing 'severity' column)
 DROP VIEW IF EXISTS vw_InventoryStatusAlerts;
 CREATE VIEW vw_InventoryStatusAlerts AS
 SELECT
     IAL.alert_id, P.name AS product_name, W.name AS warehouse_name,
     I.quantity AS current_stock, I.reorder_level, IAL.alert_date, 
-    'REORDER URGENT' AS status_alert -- Retain status_alert for readability
+    'REORDER URGENT' AS status_alert
 FROM inventory_alert_log IAL
 JOIN product P ON IAL.product_id = P.product_id
 JOIN warehouse W ON IAL.warehouse_id = W.warehouse_id
@@ -51,7 +51,7 @@ GROUP BY S.supplier_id, S.name, P.product_id, P.name, P.unit_price, P.category, 
 ORDER BY S.name, P.name;
 
 
--- 4. vw_ProductPriceAudit (CRITICAL FIX: Corrected column name)
+-- 4. vw_ProductPriceAudit (CRITICAL FIX: Used correct column name 'change_date')
 DROP VIEW IF EXISTS vw_ProductPriceAudit;
 CREATE VIEW vw_ProductPriceAudit AS
 SELECT
@@ -59,7 +59,7 @@ SELECT
     P.name AS product_name, 
     PPH.old_price, 
     PPH.new_price, 
-    PPH.change_date, -- The actual column name from the DDL
+    PPH.change_date, -- FIXED: This matches the DDL column name
     PPH.changed_by
 FROM product_price_history PPH
 JOIN product P ON PPH.product_id = P.product_id

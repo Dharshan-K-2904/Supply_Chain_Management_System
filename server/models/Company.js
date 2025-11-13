@@ -1,5 +1,5 @@
 // server/models/Company.js
-// Handles CRUD operations for the Company entity.
+// Final Version: Handles CRUD operations for the Company entity.
 
 const db = require('../config/database');
 
@@ -43,7 +43,7 @@ class Company {
         const [result] = await db.execute(sql, [
             data.name, data.type, data.address, data.contact
         ]);
-        return { company_id: result.insertId, ...data };
+        return { company_id: result[0].insertId, ...data };
     }
 
     // Update company

@@ -1,10 +1,12 @@
 -- ============================================
--- 04_insert_sample_data.sql (Final - MySQL 8.x)
+-- 04_insert_sample_data.sql (FINAL - MySQL 8.x)
+-- INSERTS: Core data, plus DB_USER for RBAC/Login (Password: DBMS@pesu2025)
 -- ============================================
 USE scm_portal;
 
 -- Clear existing data (if any)
 SET FOREIGN_KEY_CHECKS = 0;
+TRUNCATE TABLE db_user; -- NEW: TRUNCATE the user table
 TRUNCATE TABLE `transaction`; 
 TRUNCATE TABLE payment;
 TRUNCATE TABLE shipment;
@@ -26,7 +28,7 @@ INSERT INTO company (name, type, address, contact) VALUES
 ('RetailMart Chain', 'Retailer', '789 Shopping Complex, Delhi', 'support@retailmart.com'),
 ('ElectroWorld Corp', 'Manufacturer', '101 Industrial Area, Pune, Maharashtra', 'sales@electroworld.com');
 
--- 2. Insert Suppliers
+-- 2. Insert Suppliers (IDs 1-5)
 INSERT INTO supplier (name, address, contact, phone_number, company_id) VALUES
 ('ABC Electronics', '11 Industrial Area, Whitefield, Bangalore', 'abc@electronics.com', '+91-9876543210', 1),
 ('XYZ Components', '22 Tech Zone, Velachery, Chennai', 'xyz@components.com', '+91-9876543211', 1),
@@ -34,10 +36,10 @@ INSERT INTO supplier (name, address, contact, phone_number, company_id) VALUES
 ('Prime Electronics', '44 Export Zone, Ahmedabad, Gujarat', 'prime@electronics.com', '+91-9876543213', 4),
 ('Global Parts Inc', '55 Tech Hub, Noida, UP', 'global@parts.com', '+91-9876543214', 2);
 
--- 3. Insert Customers
+-- 3. Insert Customers (IDs 1-8)
 INSERT INTO customer (name, address, email, phone_number, company_id) VALUES
-('Rajesh Kumar', '101 MG Road, Bangalore, Karnataka', 'rajesh.kumar@email.com', '+91-9123456780', 3),
-('Priya Sharma', '202 Park Street, Kolkata, West Bengal', 'priya.sharma@email.com', '+91-9123456781', 3),
+('Rajesh Kumar', '101 MG Road, Bangalore, Karnataka', 'rajesh.kumar@email.com', '+91-9123456780', 3), -- ID 1
+('Priya Sharma', '202 Park Street, Kolkata, West Bengal', 'priya.sharma@email.com', '+91-9123456781', 3), -- ID 2
 ('Amit Patel', '303 Ashram Road, Ahmedabad, Gujarat', 'amit.patel@email.com', '+91-9123456782', 3),
 ('Sneha Reddy', '404 Banjara Hills, Hyderabad, Telangana', 'sneha.reddy@email.com', '+91-9123456783', 3),
 ('Vikram Singh', '505 MI Road, Jaipur, Rajasthan', 'vikram.singh@email.com', '+91-9123456784', 3),
@@ -119,5 +121,12 @@ INSERT INTO `transaction` (payment_id, date, type, amount, remarks) VALUES
 (3, DATE_SUB(NOW(), INTERVAL 5 DAY), 'Credit', 67990.00, 'Payment received for Order #3 - Samsung TV'),
 (4, DATE_SUB(NOW(), INTERVAL 3 DAY), 'Credit', 46994.00, 'Payment received for Order #4 - Multiple items'),
 (6, DATE_SUB(NOW(), INTERVAL 1 DAY), 'Credit', 173490.00, 'Payment received for Order #6 - Lenovo ThinkPad + HP Printer');
+
+-- 12. Insert DB_USER for RBAC (Password: DBMS@pesu2025)
+-- NOTE: Customer_id 1 is Rajesh Kumar; Supplier_id 1 is ABC Electronics
+INSERT INTO db_user (username, password_hash, name, role, customer_id, supplier_id) VALUES
+('admin', 'DBMS@pesu2025', 'System Administrator', 'ADMIN', NULL, NULL),
+('rajesh.k', 'DBMS@pesu2025', 'Rajesh Kumar', 'CUSTOMER', 1, NULL), 
+('abc_supplier', 'DBMS@pesu2025', 'ABC Electronics Contact', 'SUPPLIER', NULL, 1);
 
 SELECT 'Sample data inserted successfully!' AS result;

@@ -1,5 +1,5 @@
 // server/routes/companies.js
-// Final routes for Company management (CRUD)
+// Final routes for Company management
 
 const express = require('express');
 const router = express.Router();

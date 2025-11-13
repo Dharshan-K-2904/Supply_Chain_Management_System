@@ -1,8 +1,9 @@
 // server/routes/dashboard.js
-// Final Version: Includes all Standard and Advanced Routes for Full Marks.
+// FINAL VERSION — Fully aligned with updated model & controller.
 
 const express = require('express');
 const router = express.Router();
+
 const { 
     getCompleteDashboard,
     getOverallStats,
@@ -12,44 +13,42 @@ const {
     getRevenueByCategory,
     getOrderStatusDistribution,
     getDailyRevenue,
-    getWarehouseUtilization, // Updated name
+    getWarehouseUtilization,
     getPendingPayments,
-    
-    // Advanced Routes from Final Controller:
-    getDetailedOrderSummary, 
-    getProductPriceAudit,    
-    getInventoryAlerts       
+
+    // Advanced / Reports
+    getDetailedOrderSummary,
+    getProductPriceAudit,
+    getInventoryAlerts
 } = require('../controllers/dashboardController');
 
-// --- 1. Master Dashboard Route ---
-// A single call for the main dashboard view (efficient Promise.all)
+// --- 1. MASTER DASHBOARD (Promise.all → Full KPI Bundle) ---
 router.get('/', getCompleteDashboard);
 
-// --- 2. Standard KPI and Metric Routes ---
+// --- 2. STANDARD KPI ROUTES (Primary Metrics) ---
 router.get('/stats', getOverallStats);
 router.get('/orders/recent', getRecentOrders);
 router.get('/orders/distribution', getOrderStatusDistribution);
 router.get('/payments/pending', getPendingPayments);
+
 router.get('/revenue/daily', getDailyRevenue);
 router.get('/revenue/category', getRevenueByCategory);
+
 router.get('/products/top', getTopProducts);
 router.get('/customers/top', getTopCustomers);
 
-// NOTE: Renamed the route to align with the FUNCTION name
-// 🎯 FUNCTION/AGGREGATE DEMO: Calls the MySQL UDF
+// FUNCTION DEMO (MySQL UDF): Warehouse Utilization
 router.get('/metrics/warehouse-utilization', getWarehouseUtilization);
 
+// --- 3. ADVANCED / REPORT ROUTES (Views, Triggers, Logs) ---
 
-// --- 3. Advanced Database Feature Routes (For Reports Page) ---
-
-// 🎯 VIEW/JOIN DEMO: Calls the complex vw_DetailedOrderSummary
+// Detailed multi-table JOIN report (vw_DetailedOrderSummary)
 router.get('/reports/order-summary', getDetailedOrderSummary);
 
-// 🎯 AUDIT/COMPLIANCE DEMO: Calls the vw_ProductPriceAudit (Demonstrates Trigger 6)
+// Audit history (trigger-based view: vw_ProductPriceAudit)
 router.get('/reports/price-audit', getProductPriceAudit);
 
-// 🎯 LOW STOCK ALERT DEMO: Calls the vw_InventoryStatusAlerts (Demonstrates Events/Low Stock Trigger)
+// Low stock alerts triggered via event/view
 router.get('/alerts/inventory', getInventoryAlerts);
-
 
 module.exports = router;

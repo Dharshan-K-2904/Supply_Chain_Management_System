@@ -1,5 +1,5 @@
 // server/models/Supplier.js
-// Handles CRUD and advanced reporting for the Supplier entity.
+// Final Version: Handles CRUD and advanced reporting for the Supplier entity.
 
 const db = require('../config/database');
 
@@ -17,6 +17,7 @@ class Supplier {
 
     // --- Standard CRUD ---
 
+    // Get all suppliers (Calls UDF for performance score)
     static async getAll() {
         const sql = `
             SELECT 
@@ -31,6 +32,7 @@ class Supplier {
         return this.executeSelect(sql);
     }
 
+    // Get supplier by ID
     static async getById(id) {
         const sql = `
             SELECT 
@@ -45,17 +47,19 @@ class Supplier {
         return result[0];
     }
 
+    // Create new supplier
     static async create(data) {
         const sql = `
             INSERT INTO supplier (name, address, contact, phone_number, company_id)
             VALUES (?, ?, ?, ?, ?);
         `;
-        const result = await db.execute(sql, [
+        const [result] = await db.execute(sql, [
             data.name, data.address, data.contact, data.phone_number, data.company_id
         ]);
         return { supplier_id: result[0].insertId };
     }
 
+    // Update supplier
     static async update(id, data) {
         const sql = `
             UPDATE supplier SET 
@@ -68,6 +72,7 @@ class Supplier {
         return this.getById(id);
     }
 
+    // Delete supplier
     static async delete(id) {
         const sql = 'DELETE FROM supplier WHERE supplier_id = ?;';
         const [result] = await db.execute(sql, [id]);

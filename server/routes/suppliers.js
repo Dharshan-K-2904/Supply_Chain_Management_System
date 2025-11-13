@@ -4,6 +4,7 @@
 const express = require('express');
 const router = express.Router();
 const supplierController = require('../controllers/supplierController'); 
+// NOTE: Assuming you have created the Supplier Controller
 
 // --- GET (Read) Operations ---
 
@@ -14,11 +15,11 @@ router.get('/', supplierController.getAllSuppliers);
 router.get('/:id', supplierController.getSupplierById);
 
 // GET /api/suppliers/:id/products
-// 🎯 CRITICAL: Uses the VW_SUPPLIERPRODUCTLIST view
+// 🎯 CRITICAL: Uses the vw_SupplierProductList view for complex read
 router.get('/:id/products', supplierController.getProductsBySupplier);
 
 // GET /api/suppliers/:id/performance
-// 🎯 CRITICAL: Calls the GET_SUPPLIER_PERFORMANCE_SCORE UDF
+// 🎯 CRITICAL: Calls the get_supplier_performance_score() UDF
 router.get('/:id/performance', supplierController.getSupplierPerformance);
 
 

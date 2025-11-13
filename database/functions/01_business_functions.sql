@@ -105,5 +105,22 @@ BEGIN
     RETURN ROUND(v_score, 2);
 END //
 
+-- FUNCTION 11: Get Product Sales Count (Fixes the Top Products crash)
+DROP FUNCTION IF EXISTS get_product_sales_count //
+CREATE FUNCTION get_product_sales_count(p_product_id BIGINT)
+RETURNS INT
+READS SQL DATA
+BEGIN
+    DECLARE v_sales_count INT;
+    
+    -- Aggregates total quantity sold for a product
+    SELECT COALESCE(SUM(ol.quantity), 0) INTO v_sales_count
+    FROM order_line ol
+    WHERE ol.product_id = p_product_id;
+    
+    RETURN v_sales_count;
+END //
+
+
 DELIMITER ;
 SELECT 'Functions created successfully!' AS result;

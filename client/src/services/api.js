@@ -1,5 +1,6 @@
 import axios from 'axios';
 
+// CRITICAL FIX: Ensure the API URL is defined, default to 5000 where Node.js runs
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const api = axios.create({
@@ -9,10 +10,17 @@ const api = axios.create({
   },
 });
 
-// Request interceptor
+// --- CRITICAL REQUEST INTERCEPTOR ---
 api.interceptors.request.use(
   (config) => {
-    // Add any auth tokens here if needed
+    // 1. Retrieve the token from local storage
+    const token = localStorage.getItem('token'); 
+    
+    // 2. If a token exists, attach it to the Authorization header
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    
     return config;
   },
   (error) => {
@@ -25,6 +33,13 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     console.error('API Error:', error.response?.data || error.message);
+    
+    // Optional: Handle 401/403 errors globally (e.g., force logout)
+    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+        // You would typically redirect the user to the login page here
+        console.warn("Unauthorized access or token expired. Forcing logout logic.");
+    }
+    
     return Promise.reject(error);
   }
 );

@@ -1,7 +1,7 @@
 // server/controllers/companyController.js
-// Handles business logic for Company management.
+// Final controller logic for the Company entity.
 
-const Company = require('../models/Company'); // NOTE: Uses the Company Model
+const Company = require('../models/Company'); 
 
 // GET /api/companies
 exports.getAllCompanies = async (req, res) => {
@@ -65,7 +65,6 @@ exports.deleteCompany = async (req, res) => {
         res.json({ success: true, message: 'Company deleted successfully' });
     } catch (error) {
         console.error('Error deleting company:', error);
-        // Foreign key constraint failure is handled by DDL (ON DELETE CASCADE/SET NULL)
         res.status(500).json({ success: false, error: 'Failed to delete company', message: error.message });
     }
 };

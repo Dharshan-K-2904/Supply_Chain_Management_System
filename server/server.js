@@ -1,9 +1,9 @@
 // server/server.js
-// Final application entry point - Registers ALL Routes and starts server.
+// FINAL VERSION: Registers ALL Routes, including Authentication, and starts the server.
 
 const express = require('express');
 const cors = require('cors');
-require('dotenv').config(); // Load environment variables
+require('dotenv').config(); 
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -25,24 +25,33 @@ app.use(cors({
 }));
 
 
-// --- Import Routes (Ensure ALL 7 Entities are imported) ---
+// --- Import Routes (Ensure ALL 8 Route Files are imported) ---
 const productRoutes = require('./routes/products');
 const orderRoutes = require('./routes/orders');
 const customerRoutes = require('./routes/customers');
 const inventoryRoutes = require('./routes/inventory');
 const dashboardRoutes = require('./routes/dashboard');
-const warehouseRoutes = require('./routes/warehouses'); // <-- FINAL ENTITY ADDED
-const companyRoutes = require('./routes/companies');   // <-- FINAL ENTITY ADDED
+const warehouseRoutes = require('./routes/warehouses');
+const companyRoutes = require('./routes/companies');   
+const supplierRoutes = require('./routes/suppliers'); // Assuming you have this route file
+const authRoutes = require('./routes/auth');          // <-- AUTHENTICATION ROUTE
 
 
-// --- Route Mounting (Ensure ALL 7 Entities are mounted) ---
-app.use('/api/products', productRoutes);
-app.use('/api/orders', orderRoutes);
-app.use('/api/customers', customerRoutes);
-app.use('/api/inventory', inventoryRoutes);
+// --- Route Mounting (Ensure ALL 8 Routes are mounted) ---
+
+app.use('/api/auth', authRoutes);         // <-- LOGIN / AUTHENTICATION ENDPOINT
 app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/warehouses', warehouseRoutes); // <-- FINAL ROUTE MOUNTED
-app.use('/api/companies', companyRoutes);   // <-- FINAL ROUTE MOUNTED
+
+// Core Business Logic
+app.use('/api/orders', orderRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/inventory', inventoryRoutes);
+
+// Foundational Entities
+app.use('/api/customers', customerRoutes);
+app.use('/api/suppliers', supplierRoutes);
+app.use('/api/warehouses', warehouseRoutes);
+app.use('/api/companies', companyRoutes);
 
 
 // Health check (used for API status verification)

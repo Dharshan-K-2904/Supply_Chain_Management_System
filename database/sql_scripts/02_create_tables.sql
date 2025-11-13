@@ -5,7 +5,7 @@ USE scm_portal;
 
 -- Drop tables if they exist (in reverse dependency order)
 SET FOREIGN_KEY_CHECKS = 0;
-DROP TABLE IF EXISTS `product_price_history`; -- NEW AUDIT TABLE
+DROP TABLE IF EXISTS `product_price_history`;
 DROP TABLE IF EXISTS `transaction`;
 DROP TABLE IF EXISTS payment;
 DROP TABLE IF EXISTS shipment;
@@ -18,6 +18,7 @@ DROP TABLE IF EXISTS customer;
 DROP TABLE IF EXISTS supplier;
 DROP TABLE IF EXISTS company;
 DROP TABLE IF EXISTS inventory_alert_log;
+DROP TABLE IF EXISTS db_user; -- NEW: For RBAC
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- 1. COMPANY Table
@@ -220,6 +221,21 @@ CREATE TABLE product_price_history (
         FOREIGN KEY (product_id)
         REFERENCES product(product_id)
         ON DELETE CASCADE
+);
+
+-- 14. DB_USER Table (For Authentication and Role-Based Access Control)
+CREATE TABLE db_user (
+    user_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL, 
+    name VARCHAR(100) NOT NULL,
+    role ENUM('ADMIN', 'CUSTOMER', 'SUPPLIER') NOT NULL,
+    customer_id BIGINT UNIQUE, 
+    supplier_id BIGINT UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT fk_user_customer FOREIGN KEY (customer_id) REFERENCES customer(customer_id) ON DELETE SET NULL,
+    CONSTRAINT fk_user_supplier FOREIGN KEY (supplier_id) REFERENCES supplier(supplier_id) ON DELETE SET NULL
 );
 
 SELECT 'All tables created successfully!' AS result;

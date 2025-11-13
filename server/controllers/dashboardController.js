@@ -1,6 +1,6 @@
 const Dashboard = require('../models/Dashboard');
 
-// --- Standard Endpoints (Maintain Original Structure) ---
+// --- Standard Endpoints (Maintaining your structure) ---
 
 exports.getOverallStats = async (req, res) => {
   try {
@@ -48,7 +48,7 @@ exports.getTopCustomers = async (req, res) => {
 exports.getRevenueByCategory = async (req, res) => {
   try {
     const data = await Dashboard.getRevenueByCategory();
-    res.json({ success: true, count: data.length, data: data });
+    res.json({ success: true, count: data.length, data });
   } catch (error) {
     console.error('Error fetching revenue by category:', error);
     res.status(500).json({ success: false, error: 'Failed to fetch revenue by category', message: error.message });
@@ -58,7 +58,7 @@ exports.getRevenueByCategory = async (req, res) => {
 exports.getOrderStatusDistribution = async (req, res) => {
   try {
     const data = await Dashboard.getOrderStatusDistribution();
-    res.json({ success: true, count: data.length, data: data });
+    res.json({ success: true, count: data.length, data });
   } catch (error) {
     console.error('Error fetching order status distribution:', error);
     res.status(500).json({ success: false, error: 'Failed to fetch order status distribution', message: error.message });
@@ -69,7 +69,7 @@ exports.getDailyRevenue = async (req, res) => {
   try {
     const days = parseInt(req.query.days) || 30;
     const data = await Dashboard.getDailyRevenue(days);
-    res.json({ success: true, count: data.length, data: data });
+    res.json({ success: true, count: data.length, data });
   } catch (error) {
     console.error('Error fetching daily revenue:', error);
     res.status(500).json({ success: false, error: 'Failed to fetch daily revenue', message: error.message });
@@ -79,73 +79,57 @@ exports.getDailyRevenue = async (req, res) => {
 exports.getPendingPayments = async (req, res) => {
   try {
     const data = await Dashboard.getPendingPayments();
-    res.json({ success: true, count: data.length, data: data });
+    res.json({ success: true, count: data.length, data });
   } catch (error) {
     console.error('Error fetching pending payments:', error);
     res.status(500).json({ success: false, error: 'Failed to fetch pending payments', message: error.message });
   }
 };
 
-// NOTE: Renamed getWarehouseEfficiency to getWarehouseUtilization 
-// to align with the FUNCTION name (calculate_warehouse_utilization)
+// NOTE: Dashboard.getWarehouseUtilization() takes NO parameters
 exports.getWarehouseUtilization = async (req, res) => {
   try {
-    const warehouseId = req.query.warehouseId; // Optional parameter for a single warehouse
-    // NOTE: Dashboard.getWarehouseUtilization must call the FUNCTION
-    const data = await Dashboard.getWarehouseUtilization(warehouseId); 
-    res.json({ success: true, count: data.length, data: data });
+    const data = await Dashboard.getWarehouseUtilization();
+    res.json({ success: true, count: data.length, data });
   } catch (error) {
     console.error('Error fetching warehouse utilization:', error);
     res.status(500).json({ success: false, error: 'Failed to fetch warehouse utilization', message: error.message });
   }
 };
 
-// --- Advanced/Complex Query Endpoints (For Full Marks) ---
+// --- Advanced / Complex Query Endpoints ---
 
-/**
- * 🎯 VIEW/JOIN DEMO: Get Detailed Order Summary (vw_DetailedOrderSummary)
- */
 exports.getDetailedOrderSummary = async (req, res) => {
   try {
-    // Queries the complex 4-table JOIN view for comprehensive reporting
     const data = await Dashboard.getDetailedOrderSummary();
-    res.json({ success: true, count: data.length, data: data });
+    res.json({ success: true, count: data.length, data });
   } catch (error) {
     console.error('Error fetching detailed order summary:', error);
     res.status(500).json({ success: false, error: 'Failed to fetch detailed order summary', message: error.message });
   }
 };
 
-/**
- * 🎯 AUDIT/COMPLIANCE DEMO: Get Product Price Audit History (vw_ProductPriceAudit)
- */
 exports.getProductPriceAudit = async (req, res) => {
   try {
-    // Queries the view based on the price change trigger (TRG_AUDIT_PRODUCT_PRICE)
     const data = await Dashboard.getProductPriceAudit();
-    res.json({ success: true, count: data.length, data: data });
+    res.json({ success: true, count: data.length, data });
   } catch (error) {
     console.error('Error fetching product price audit:', error);
     res.status(500).json({ success: false, error: 'Failed to fetch product price audit history', message: error.message });
   }
 };
 
-/**
- * 🎯 Low Stock Alerts (vw_InventoryStatusAlerts/Event Tracking)
- */
 exports.getInventoryAlerts = async (req, res) => {
   try {
-    // Queries the view based on the low stock trigger/event logs
     const data = await Dashboard.getInventoryAlerts();
-    res.json({ success: true, count: data.length, data: data });
+    res.json({ success: true, count: data.length, data });
   } catch (error) {
     console.error('Error fetching inventory alerts:', error);
     res.status(500).json({ success: false, error: 'Failed to fetch inventory alerts', message: error.message });
   }
 };
 
-
-// --- Master Dashboard Function ---
+// --- Complete Dashboard (Master API) ---
 
 exports.getCompleteDashboard = async (req, res) => {
   try {
@@ -157,9 +141,9 @@ exports.getCompleteDashboard = async (req, res) => {
       revenueByCategory,
       orderStatusDistribution,
       dailyRevenue,
-      warehouseUtilization, // Updated variable name
-      inventoryAlerts,       // New: Low stock alerts
-      priceAudit             // New: Audit trail
+      warehouseUtilization,
+      inventoryAlerts,
+      priceAudit
     ] = await Promise.all([
       Dashboard.getOverallStats(),
       Dashboard.getRecentOrders(5),
@@ -168,11 +152,11 @@ exports.getCompleteDashboard = async (req, res) => {
       Dashboard.getRevenueByCategory(),
       Dashboard.getOrderStatusDistribution(),
       Dashboard.getDailyRevenue(30),
-      Dashboard.getWarehouseUtilization(), 
-      Dashboard.getInventoryAlerts(),      
-      Dashboard.getProductPriceAudit()     
+      Dashboard.getWarehouseUtilization(),
+      Dashboard.getInventoryAlerts(),
+      Dashboard.getProductPriceAudit()
     ]);
-    
+
     res.json({
       success: true,
       data: {
@@ -183,7 +167,7 @@ exports.getCompleteDashboard = async (req, res) => {
         revenueByCategory,
         orderStatusDistribution,
         dailyRevenue,
-        warehouseUtilization, // Updated key
+        warehouseUtilization,
         inventoryAlerts,
         priceAudit
       }
