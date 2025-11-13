@@ -1,7 +1,9 @@
 const Customer = require('../models/Customer');
 
+// GET /api/customers
 exports.getAllCustomers = async (req, res) => {
   try {
+    // NOTE: Model fetches CLV and VIP status using UDFs
     const customers = await Customer.getAll();
     res.json({
       success: true,
@@ -18,6 +20,7 @@ exports.getAllCustomers = async (req, res) => {
   }
 };
 
+// GET /api/customers/:id
 exports.getCustomerById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -44,6 +47,7 @@ exports.getCustomerById = async (req, res) => {
   }
 };
 
+// POST /api/customers
 exports.createCustomer = async (req, res) => {
   try {
     const customer = await Customer.create(req.body);
@@ -56,11 +60,11 @@ exports.createCustomer = async (req, res) => {
   } catch (error) {
     console.error('Error creating customer:', error);
     
-    // Handle duplicate email error
-    if (error.code === '23505' || error.code === 'ER_DUP_ENTRY') {
+    // Check for MySQL Duplicate Entry error (ER_DUP_ENTRY is 1062)
+    if (error.code === 'ER_DUP_ENTRY' || error.code === '23505') {
       return res.status(400).json({
         success: false,
-        error: 'Email already exists'
+        error: 'Email already exists. Customer creation failed.'
       });
     }
     
@@ -72,6 +76,7 @@ exports.createCustomer = async (req, res) => {
   }
 };
 
+// PUT /api/customers/:id
 exports.updateCustomer = async (req, res) => {
   try {
     const { id } = req.params;
@@ -99,12 +104,14 @@ exports.updateCustomer = async (req, res) => {
   }
 };
 
+// DELETE /api/customers/:id
 exports.deleteCustomer = async (req, res) => {
   try {
     const { id } = req.params;
-    const customer = await Customer.delete(id);
+    // NOTE: Model returns { message: 'Customer deleted successfully' } or 'Customer not found'
+    const result = await Customer.delete(id); 
     
-    if (!customer) {
+    if (result.message === 'Customer not found') {
       return res.status(404).json({
         success: false,
         error: 'Customer not found'
@@ -113,17 +120,16 @@ exports.deleteCustomer = async (req, res) => {
     
     res.json({
       success: true,
-      message: 'Customer deleted successfully',
-      data: customer
+      message: 'Customer deleted successfully'
     });
   } catch (error) {
     console.error('Error deleting customer:', error);
     
-    // Handle foreign key constraint error
-    if (error.code === '23503' || error.code === 'ER_ROW_IS_REFERENCED') {
+    // Check for MySQL Foreign Key Constraint error (ER_ROW_IS_REFERENCED is 1451/1452)
+    if (error.code === 'ER_ROW_IS_REFERENCED' || error.code === '23503') {
       return res.status(400).json({
         success: false,
-        error: 'Cannot delete customer with existing orders'
+        error: 'Cannot delete customer with existing orders. Foreign key constraint violation.'
       });
     }
     
@@ -135,9 +141,11 @@ exports.deleteCustomer = async (req, res) => {
   }
 };
 
+// GET /api/customers/vip
 exports.getVIPCustomers = async (req, res) => {
   try {
-    const customers = await Customer.getVIPCustomers();
+    // NOTE: Model uses the UDF is_customer_vip(c.customer_id) in its WHERE clause
+    const customers = await Customer.getVIPCustomers(); 
     res.json({
       success: true,
       count: customers.length,

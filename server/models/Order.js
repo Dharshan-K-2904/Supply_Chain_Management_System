@@ -1,7 +1,22 @@
 const db = require('../config/database');
 
 class Order {
-  // Get all orders
+  
+  // Helper to execute standard DML queries
+  static async executeQuery(sql, values = []) {
+    // Uses db.query() for multi-statement execution (required for CALL + SELECT)
+    const [rows] = await db.query(sql, values);
+    return rows;
+  }
+  
+  // Helper to execute single DML statements
+  static async executeSelect(sql, values = []) {
+    // Uses db.execute() for single statement, simpler fetching
+    const [rows] = await db.execute(sql, values);
+    return rows;
+  }
+
+  // Get all orders (Standard Read)
   static async getAll() {
     const query = `
       SELECT 
@@ -14,36 +29,32 @@ class Order {
         c.email AS customer_email,
         s.tracking_number,
         p.status AS payment_status
-      FROM "order" o
+      FROM \`order\` o
       JOIN customer c ON o.customer_id = c.customer_id
       LEFT JOIN shipment s ON o.order_id = s.order_id
       LEFT JOIN payment p ON o.order_id = p.order_id
       ORDER BY o.date DESC
     `;
     
-    // PostgreSQL
-    const result = await db.query(query);
-    return result.rows;
-    
-    // MySQL: Replace "order" with \`order\` and use:
-    // const [rows] = await db.query(query);
-    // return rows;
+    const rows = await this.executeSelect(query);
+    return rows;
   }
 
-  // Get order by ID with details
+  // Get order by ID with details (Complex Read - combining multiple queries)
   static async getById(id) {
+    // NOTE: MySQL does not support $1 placeholders. We use ?
+    
     const orderQuery = `
       SELECT 
         o.*,
         c.name AS customer_name,
         c.email AS customer_email,
         c.phone_number AS customer_phone,
-        c.address AS customer_address,
-        get_order_status_description(o.order_id) AS status_description,
-        get_days_since_order(o.order_id) AS days_since_order
-      FROM "order" o
+        c.address AS customer_address
+        -- Removed PG-specific functions: get_order_status_description, get_days_since_order
+      FROM \`order\` o
       JOIN customer c ON o.customer_id = c.customer_id
-      WHERE o.order_id = $1
+      WHERE o.order_id = ?
     `;
     
     const orderLinesQuery = `
@@ -57,94 +68,82 @@ class Order {
         (ol.quantity * ol.price) AS line_total
       FROM order_line ol
       JOIN product p ON ol.product_id = p.product_id
-      WHERE ol.order_id = $1
+      WHERE ol.order_id = ?
     `;
     
     const shipmentQuery = `
-      SELECT * FROM shipment WHERE order_id = $1
+      SELECT * FROM shipment WHERE order_id = ?
     `;
     
     const paymentQuery = `
-      SELECT * FROM payment WHERE order_id = $1
+      SELECT * FROM payment WHERE order_id = ?
     `;
     
-    // PostgreSQL
-    const orderResult = await db.query(orderQuery, [id]);
-    const orderLinesResult = await db.query(orderLinesQuery, [id]);
-    const shipmentResult = await db.query(shipmentQuery, [id]);
-    const paymentResult = await db.query(paymentQuery, [id]);
+    // Execute all queries in parallel
+    const [orderResult, orderLinesResult, shipmentResult, paymentResult] = await Promise.all([
+      this.executeSelect(orderQuery, [id]),
+      this.executeSelect(orderLinesQuery, [id]),
+      this.executeSelect(shipmentQuery, [id]),
+      this.executeSelect(paymentQuery, [id]),
+    ]);
     
-    if (orderResult.rows.length === 0) {
+    if (orderResult.length === 0) {
       return null;
     }
     
     return {
-      ...orderResult.rows[0],
-      order_lines: orderLinesResult.rows,
-      shipment: shipmentResult.rows[0] || null,
-      payment: paymentResult.rows[0] || null
+      ...orderResult[0],
+      order_lines: orderLinesResult,
+      shipment: shipmentResult[0] || null,
+      payment: paymentResult[0] || null
     };
-    
-    // MySQL: Replace $1 with ? and use db.query() instead
   }
 
-  // Get orders by customer
+  // Get orders by customer (Read from Stored Procedure)
   static async getByCustomer(customerId) {
+    // This calls the Stored Procedure GET_CUSTOMER_ORDERS
+    const query = `CALL get_customer_orders(?)`;
+    
+    const [results] = await db.execute(query, [customerId]); 
+    // MySQL returns two arrays for procedure results; we return the first one.
+    return results[0]; 
+  }
+
+  // Create new order (using Stored Procedure)
+  static async create(customerId, priority) {
+    // MySQL requires a multi-statement query to get the OUT parameter
     const query = `
-      SELECT 
-        o.order_id,
-        o.date,
-        o.total_amount,
-        o.status,
-        o.priority,
-        s.tracking_number,
-        s.status AS shipment_status
-      FROM "order" o
-      LEFT JOIN shipment s ON o.order_id = s.order_id
-      WHERE o.customer_id = $1
-      ORDER BY o.date DESC
+        CALL place_order(?, ?, @order_id);
+        SELECT @order_id AS order_id;
     `;
     
-    const result = await db.query(query, [customerId]);
-    return result.rows;
+    const [results] = await db.query(query, [customerId, priority]);
+    // The second result set (index 1) contains the order ID
+    return results[1][0]; 
   }
 
-  // Create new order (using stored procedure)
-  static async create(customerId, priority) {
-    const query = `CALL place_order($1, $2, NULL)`;
-    
-    // PostgreSQL
-    const result = await db.query(query, [customerId, priority]);
-    // Extract order_id from procedure result
-    return result.rows[0];
-    
-    // MySQL
-    // await db.query('CALL place_order(?, ?, @order_id)', [customerId, priority]);
-    // const [result] = await db.query('SELECT @order_id AS order_id');
-    // return result[0];
-  }
-
-  // Add item to order
+  // Add item to order (using Stored Procedure - CRITICAL for Transactions/Triggers)
   static async addItem(orderId, productId, quantity) {
-    const query = `CALL add_order_item($1, $2, $3)`;
-    await db.query(query, [orderId, productId, quantity]);
+    // This calls the transactional procedure ADD_ORDER_ITEM
+    const query = `CALL add_order_item(?, ?, ?)`;
+    await db.execute(query, [orderId, productId, quantity]);
     return { message: 'Item added successfully' };
   }
 
-  // Update order status
+  // Update order status (Standard Update - will trigger TRG_UPDATE_ORDER_STATUS_ON_SHIPMENT)
   static async updateStatus(id, status) {
     const query = `
-      UPDATE "order"
-      SET status = $1
-      WHERE order_id = $2
-      RETURNING *
+      UPDATE \`order\`
+      SET status = ?
+      WHERE order_id = ?
     `;
     
-    const result = await db.query(query, [status, id]);
-    return result.rows[0];
+    await db.execute(query, [status, id]);
+    // Since MySQL doesn't have RETURNING, fetch the updated row manually
+    return this.getById(id); 
   }
 
-  // Get order statistics
+  // Get order statistics (Aggregate Query)
   static async getStatistics() {
     const query = `
       SELECT 
@@ -154,16 +153,13 @@ class Order {
         SUM(CASE WHEN status = 'Shipped' THEN 1 ELSE 0 END) AS shipped_orders,
         SUM(CASE WHEN status = 'Delivered' THEN 1 ELSE 0 END) AS delivered_orders,
         SUM(CASE WHEN status = 'Cancelled' THEN 1 ELSE 0 END) AS cancelled_orders,
-        SUM(total_amount) FILTER (WHERE status != 'Cancelled') AS total_revenue,
-        AVG(total_amount) FILTER (WHERE status != 'Cancelled') AS avg_order_value
-      FROM "order"
+        SUM(CASE WHEN status != 'Cancelled' THEN total_amount ELSE 0 END) AS total_revenue,
+        AVG(CASE WHEN status != 'Cancelled' THEN total_amount ELSE NULL END) AS avg_order_value
+      FROM \`order\`
     `;
     
-    // PostgreSQL
-    const result = await db.query(query);
-    return result.rows[0];
-    
-    // MySQL: Replace FILTER with CASE WHEN
+    const [rows] = await db.execute(query);
+    return rows[0];
   }
 }
 

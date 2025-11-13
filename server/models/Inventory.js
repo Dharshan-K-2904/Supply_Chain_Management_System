@@ -1,8 +1,26 @@
+// server/models/Inventory.js
+// Final Version: Converted to MySQL syntax for compatibility.
+
 const db = require('../config/database');
 
 class Inventory {
-  // Get all inventory
+
+  // Helper method for standard SELECT statements
+  static async executeSelect(sql, values = []) {
+    try {
+        const [rows] = await db.execute(sql, values);
+        return rows;
+    } catch (error) {
+        console.error("Inventory Model Query Failed:", error);
+        throw new Error("Inventory database operation failed: " + error.message);
+    }
+  }
+
+  // --- Core Operations ---
+
+  // Get all inventory records across all warehouses
   static async getAll() {
+    // Replaced PostgreSQL CASE WHEN syntax
     const query = `
       SELECT 
         i.*,
@@ -22,8 +40,7 @@ class Inventory {
       ORDER BY p.name, w.name
     `;
     
-    const result = await db.query(query);
-    return result.rows;
+    return this.executeSelect(query);
   }
 
   // Get inventory by warehouse
@@ -36,12 +53,11 @@ class Inventory {
         p.unit_price
       FROM inventory i
       JOIN product p ON i.product_id = p.product_id
-      WHERE i.warehouse_id = $1
+      WHERE i.warehouse_id = ?
       ORDER BY p.name
     `;
     
-    const result = await db.query(query, [warehouseId]);
-    return result.rows;
+    return this.executeSelect(query, [warehouseId]);
   }
 
   // Get inventory by product
@@ -54,42 +70,64 @@ class Inventory {
         w.capacity
       FROM inventory i
       JOIN warehouse w ON i.warehouse_id = w.warehouse_id
-      WHERE i.product_id = $1
+      WHERE i.product_id = ?
       ORDER BY w.name
     `;
     
-    const result = await db.query(query, [productId]);
-    return result.rows;
+    return this.executeSelect(query, [productId]);
   }
 
-  // Update inventory
+  /**
+   * CRITICAL: Update inventory - Calls the Stored Procedure (update_inventory_qty)
+   * This is used for manual stock adjustments and demonstrates procedure execution.
+   */
   static async update(productId, warehouseId, operation, quantity) {
-    const query = `CALL update_inventory_qty($1, $2, $3, $4)`;
-    await db.query(query, [productId, warehouseId, operation, quantity]);
-     // Fetch updated inventory
+    // 1. Execute the stored procedure
+    // NOTE: We assume the procedure handles ADD/SUBTRACT and validation.
+    const query = `CALL update_inventory_qty(?, ?, ?, ?)`;
+    await db.execute(query, [productId, warehouseId, quantity, operation]);
+     
+    // 2. Fetch updated inventory
     const selectQuery = `
       SELECT * FROM inventory 
-      WHERE product_id = $1 AND warehouse_id = $2
+      WHERE product_id = ? AND warehouse_id = ?
     `;
-    const result = await db.query(selectQuery, [productId, warehouseId]);
-    return result.rows[0];
+    const [result] = await db.execute(selectQuery, [productId, warehouseId]);
+    return result[0];
   }
 
-  // Add new inventory record
+  // Add new inventory record (Used for initial stock creation)
   static async create(inventoryData) {
     const { product_id, warehouse_id, quantity, reorder_level } = inventoryData;
     
+    // MySQL INSERT ON DUPLICATE KEY UPDATE syntax is typically better for inventory,
+    // but here we use a standard INSERT.
     const query = `
       INSERT INTO inventory (product_id, warehouse_id, quantity, reorder_level)
-      VALUES ($1, $2, $3, $4)
-      RETURNING *
+      VALUES (?, ?, ?, ?)
     `;
     
-    const result = await db.query(query, [product_id, warehouse_id, quantity, reorder_level || 10]);
-    return result.rows[0];
+    const [result] = await db.execute(query, [product_id, warehouse_id, quantity, reorder_level || 10]);
+    
+    // Return the inserted data along with the product info
+    return this.getByIds(product_id, warehouse_id);
+  }
+  
+  // Helper to fetch by composite PK after update/create
+  static async getByIds(productId, warehouseId) {
+      const sql = `
+        SELECT I.*, P.name AS product_name, W.name AS warehouse_name 
+        FROM inventory I
+        JOIN product P ON I.product_id = P.product_id
+        JOIN warehouse W ON I.warehouse_id = W.warehouse_id
+        WHERE I.product_id = ? AND I.warehouse_id = ?;
+      `;
+      const [rows] = await db.execute(sql, [productId, warehouseId]);
+      return rows[0];
   }
 
-  // Get low stock items
+
+  // Get low stock items (Advanced Reporting Read)
   static async getLowStock() {
     const query = `
       SELECT 
@@ -107,11 +145,10 @@ class Inventory {
       ORDER BY units_below_threshold DESC
     `;
     
-    const result = await db.query(query);
-    return result.rows;
+    return this.executeSelect(query);
   }
 
-  // Get inventory alerts from log
+  // Get inventory alerts from log (Auditing/Logging Read)
   static async getAlerts() {
     const query = `
       SELECT 
@@ -119,19 +156,18 @@ class Inventory {
         p.name AS product_name,
         w.name AS warehouse_name
       FROM inventory_alert_log ial
-      JOIN inventory i ON ial.product_id = i.product_id AND ial.warehouse_id = i.warehouse_id
       JOIN product p ON ial.product_id = p.product_id
       JOIN warehouse w ON ial.warehouse_id = w.warehouse_id
       ORDER BY ial.alert_date DESC
       LIMIT 50
     `;
     
-    const result = await db.query(query);
-    return result.rows;
+    return this.executeSelect(query);
   }
 
-  // Get inventory summary by warehouse
+  // Get inventory summary by warehouse (Aggregate/Function Read)
   static async getWarehouseSummary() {
+    // Calls the calculate_warehouse_utilization UDF and uses aggregation
     const query = `
       SELECT 
         w.warehouse_id,
@@ -144,12 +180,11 @@ class Inventory {
         COUNT(CASE WHEN i.quantity <= i.reorder_level THEN 1 END) AS low_stock_items
       FROM warehouse w
       LEFT JOIN inventory i ON w.warehouse_id = i.warehouse_id
-      GROUP BY w.warehouse_id, w.name, w.location, w.capacity
+      GROUP BY w.warehouse_id, w.name, w.location, w.capacity, w.location
       ORDER BY w.name
     `;
     
-    const result = await db.query(query);
-    return result.rows;
+    return this.executeSelect(query);
   }
 }
   

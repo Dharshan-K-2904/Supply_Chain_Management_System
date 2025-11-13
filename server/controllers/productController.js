@@ -87,7 +87,10 @@ exports.createProduct = async (req, res) => {
   }
 };
 
-// Update product
+/**
+ * 🎯 CRITICAL UPDATE: Update product
+ * This operation triggers the database audit logic.
+ */
 exports.updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
@@ -100,9 +103,10 @@ exports.updateProduct = async (req, res) => {
       });
     }
     
+    // Explicitly mention the audit for the viva/presentation
     res.json({
       success: true,
-      message: 'Product updated successfully',
+      message: 'Product updated successfully. Price changes audited by database trigger.',
       data: product
     });
   } catch (error) {
@@ -119,9 +123,11 @@ exports.updateProduct = async (req, res) => {
 exports.deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    const product = await Product.delete(id);
+    // NOTE: The model must return an object if successful, even if the result set is empty.
+    // Assuming the model returns { message: '...' } upon successful deletion.
+    const result = await Product.delete(id);
     
-    if (!product) {
+    if (!result || result.message === 'Product not found') {
       return res.status(404).json({
         success: false,
         error: 'Product not found'
@@ -130,8 +136,7 @@ exports.deleteProduct = async (req, res) => {
     
     res.json({
       success: true,
-      message: 'Product deleted successfully',
-      data: product
+      message: 'Product deleted successfully'
     });
   } catch (error) {
     console.error('Error deleting product:', error);
@@ -143,7 +148,7 @@ exports.deleteProduct = async (req, res) => {
   }
 };
 
-// Get low stock products
+// Get low stock products (Demonstrates complex read/reporting)
 exports.getLowStockProducts = async (req, res) => {
   try {
     const products = await Product.getLowStock();

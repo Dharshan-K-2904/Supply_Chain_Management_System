@@ -1,6 +1,10 @@
+// server/controllers/orderController.js
+// FINAL VERSION: Corrected scope issues to resolve ReferenceError.
+
 const Order = require('../models/Order');
 
-// Get all orders
+// --- Function Definitions (Using exports. prefix directly) ---
+
 exports.getAllOrders = async (req, res) => {
   try {
     const orders = await Order.getAll();
@@ -19,11 +23,10 @@ exports.getAllOrders = async (req, res) => {
   }
 };
 
-// Get order by ID
 exports.getOrderById = async (req, res) => {
   try {
     const { id } = req.params;
-    const order = await Order.getById(id);
+    const order = await Order.getById(id); 
     
     if (!order) {
       return res.status(404).json({
@@ -46,11 +49,10 @@ exports.getOrderById = async (req, res) => {
   }
 };
 
-// Get orders by customer
 exports.getOrdersByCustomer = async (req, res) => {
   try {
     const { customerId } = req.params;
-    const orders = await Order.getByCustomer(customerId);
+    const orders = await Order.getByCustomer(customerId); 
     
     res.json({
       success: true,
@@ -67,12 +69,10 @@ exports.getOrdersByCustomer = async (req, res) => {
   }
 };
 
-// Create new order
 exports.createOrder = async (req, res) => {
   try {
     const { customer_id, priority, items } = req.body;
     
-    // Validate input
     if (!customer_id || !items || items.length === 0) {
       return res.status(400).json({
         success: false,
@@ -80,34 +80,58 @@ exports.createOrder = async (req, res) => {
       });
     }
     
-    // Create order
-    const order = await Order.create(customer_id, priority || 'Medium');
-    const orderId = order.order_id || order.p_order_id;
+    // 1. Create order: Calls the Stored Procedure PLACE_ORDER
+    const orderResult = await Order.create(customer_id, priority || 'Medium');
+    const orderId = orderResult.order_id; 
     
-    // Add items to order
+    // 2. Add items to order (each call executes the ADD_ORDER_ITEM procedure)
     for (const item of items) {
       await Order.addItem(orderId, item.product_id, item.quantity);
     }
     
-    // Fetch complete order details
+    // 3. Fetch complete order details
     const completeOrder = await Order.getById(orderId);
     
     res.status(201).json({
       success: true,
-      message: 'Order created successfully',
+      message: 'Order created and items added transactionally',
       data: completeOrder
     });
   } catch (error) {
     console.error('Error creating order:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to create order',
+      error: 'Failed to create order (Check Inventory or Transaction Log)',
       message: error.message
     });
   }
 };
 
-// Update order status
+exports.addItemToOrder = async (req, res) => {
+    try {
+        const { id } = req.params; // order_id
+        const { product_id, quantity } = req.body;
+        
+        await Order.addItem(id, product_id, quantity);
+        
+        // Fetch updated order details and send success response
+        const updatedOrder = await Order.getById(id);
+        
+        res.json({
+            success: true,
+            message: `Product ${product_id} added to order ${id}. Total updated automatically.`,
+            data: updatedOrder
+        });
+    } catch (error) {
+        console.error('Error adding item to order:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to add item (Insufficient Stock or Transaction Error)',
+            message: error.message
+        });
+    }
+};
+
 exports.updateOrderStatus = async (req, res) => {
   try {
     const { id } = req.params;
@@ -132,7 +156,7 @@ exports.updateOrderStatus = async (req, res) => {
     
     res.json({
       success: true,
-      message: 'Order status updated successfully',
+      message: `Order status updated to ${status}. Related database triggers may have fired.`,
       data: order
     });
   } catch (error) {
@@ -145,10 +169,9 @@ exports.updateOrderStatus = async (req, res) => {
   }
 };
 
-// Get order statistics
-exports.getOrderStatistics = async (req, res) => {
+exports.getStatistics = async (req, res) => {
   try {
-    const stats = await Order.getStatistics();
+    const stats = await Order.getStatistics(); 
     res.json({
       success: true,
       data: stats
@@ -161,4 +184,17 @@ exports.getOrderStatistics = async (req, res) => {
       message: error.message
     });
   }
+};
+
+// --- CRITICAL EXPORT BLOCK ---
+// We now explicitly set the module.exports object after all functions are defined.
+// This structure is guaranteed to work and avoids the ReferenceError.
+module.exports = {
+    getAllOrders: exports.getAllOrders, 
+    getOrderById: exports.getOrderById, 
+    getOrdersByCustomer: exports.getOrdersByCustomer,
+    createOrder: exports.createOrder,
+    addItemToOrder: exports.addItemToOrder,
+    updateOrderStatus: exports.updateOrderStatus,
+    getStatistics: exports.getStatistics   // ✅ FIXED LINE
 };

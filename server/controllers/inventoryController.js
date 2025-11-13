@@ -1,5 +1,9 @@
+// server/controllers/inventoryController.js
+// Final controller logic for the Inventory records.
+
 const Inventory = require('../models/Inventory');
 
+// GET /api/inventory
 exports.getAllInventory = async (req, res) => {
   try {
     const inventory = await Inventory.getAll();
@@ -12,12 +16,13 @@ exports.getAllInventory = async (req, res) => {
     console.error('Error fetching inventory:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch inventory',
+      error: 'Failed to fetch inventory records',
       message: error.message
     });
   }
 };
 
+// GET /api/inventory/warehouse/:warehouseId
 exports.getInventoryByWarehouse = async (req, res) => {
   try {
     const { warehouseId } = req.params;
@@ -38,6 +43,7 @@ exports.getInventoryByWarehouse = async (req, res) => {
   }
 };
 
+// GET /api/inventory/product/:productId
 exports.getInventoryByProduct = async (req, res) => {
   try {
     const { productId } = req.params;
@@ -58,7 +64,11 @@ exports.getInventoryByProduct = async (req, res) => {
   }
 };
 
-exports.updateInventory = async (req, res) => {
+/**
+ * 🎯 CRITICAL: Adjust Stock (Mapped to the update_inventory_qty Stored Procedure)
+ * This handles ADD/SUBTRACT operations on stock levels.
+ */
+exports.adjustStock = async (req, res) => {
   try {
     const { product_id, warehouse_id, operation, quantity } = req.body;
     
@@ -84,23 +94,37 @@ exports.updateInventory = async (req, res) => {
       });
     }
     
+    // NOTE: Model.update() calls CALL update_inventory_qty()
     const inventory = await Inventory.update(product_id, warehouse_id, operation, quantity);
     
+    // This operation fires TRG_CHECK_LOW_INVENTORY if stock drops critically low.
     res.json({
       success: true,
-      message: `Inventory ${operation === 'ADD' ? 'increased' : 'decreased'} successfully`,
+      message: `Stock adjusted successfully via Stored Procedure (${operation}).`,
       data: inventory
     });
   } catch (error) {
-    console.error('Error updating inventory:', error);
+    console.error('Error adjusting inventory:', error);
+    // CRITICAL: Catches the error signaled by the stored procedure if stock drops below zero.
+    if (error.message.includes('Cannot reduce inventory below zero')) {
+         return res.status(400).json({
+            success: false,
+            error: 'Insufficient stock: Cannot reduce quantity below zero.',
+            message: error.message
+         });
+    }
     res.status(500).json({
       success: false,
-      error: 'Failed to update inventory',
+      error: 'Failed to adjust inventory',
       message: error.message
     });
   }
 };
 
+/**
+ * Creates/Initializes Inventory Record (Mapped to Model.create())
+ * This is used for setting the initial stock levels for a new product/warehouse combination.
+ */
 exports.createInventory = async (req, res) => {
   try {
     const inventory = await Inventory.create(req.body);
@@ -113,11 +137,11 @@ exports.createInventory = async (req, res) => {
   } catch (error) {
     console.error('Error creating inventory:', error);
     
-    // Handle duplicate key error
-    if (error.code === '23505' || error.code === 'ER_DUP_ENTRY') {
+    // Check for MySQL Duplicate Entry error (ER_DUP_ENTRY) for the composite key (product_id, warehouse_id)
+    if (error.code === 'ER_DUP_ENTRY') {
       return res.status(400).json({
         success: false,
-        error: 'Inventory record already exists for this product and warehouse'
+        error: 'Inventory record already exists for this product and warehouse. Use stock adjustment instead.'
       });
     }
     
@@ -129,6 +153,7 @@ exports.createInventory = async (req, res) => {
   }
 };
 
+// GET /api/inventory/low-stock (Complex Read)
 exports.getLowStockInventory = async (req, res) => {
   try {
     const inventory = await Inventory.getLowStock();
@@ -142,12 +167,13 @@ exports.getLowStockInventory = async (req, res) => {
     console.error('Error fetching low stock inventory:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch low stock inventory',
+      error: 'Failed to fetch low stock report',
       message: error.message
     });
   }
 };
 
+// GET /api/inventory/alerts (Auditing/Logging Read)
 exports.getInventoryAlerts = async (req, res) => {
   try {
     const alerts = await Inventory.getAlerts();
@@ -167,8 +193,10 @@ exports.getInventoryAlerts = async (req, res) => {
   }
 };
 
+// GET /api/inventory/summary (Aggregate/Function Read)
 exports.getWarehouseSummary = async (req, res) => {
   try {
+    // NOTE: Model calls calculate_warehouse_utilization UDF
     const summary = await Inventory.getWarehouseSummary();
     
     res.json({
